@@ -4,6 +4,7 @@ import io.micronaut.caffeine.cache.AsyncLoadingCache;
 import io.micronaut.caffeine.cache.Caffeine;
 import me.kleidukos.models.MarketListKey;
 import me.kleidukos.models.RequieredKey;
+import me.kleidukos.models.WorldMarketSubListKey;
 import me.kleidukos.util.MarketAPI;
 
 import java.net.URISyntaxException;
@@ -31,15 +32,41 @@ public class CacheManager {
         }
     }
 
+    public AsyncLoadingCache<RequieredKey, String> marketWaitList = Caffeine
+            .newBuilder()
+            .expireAfterWrite(30, TimeUnit.MINUTES)
+            .buildAsync(this::loadMarketWaitList);
+
+    private String loadMarketWaitList(RequieredKey key){
+        try {
+            return marketAPI.getWorldMarketWaitList(key.region(), key.lang()).get();
+        } catch (URISyntaxException | ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public AsyncLoadingCache<MarketListKey, String> marketList = Caffeine
             .newBuilder()
             .expireAfterWrite(30, TimeUnit.MINUTES)
-            .buildAsync(null);
+            .buildAsync(this::loadWorldMarketList);
 
-    private String loadMarketList(MarketListKey key){
+    private String loadWorldMarketList(MarketListKey key){
         try {
-            return marketAPI.getMarketList(key).get();
-        } catch (InterruptedException | ExecutionException e) {
+            return marketAPI.getWorldMarketList(key).get();
+        } catch (InterruptedException | ExecutionException | URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public AsyncLoadingCache<WorldMarketSubListKey, String> marketSubList = Caffeine
+            .newBuilder()
+            .expireAfterWrite(30, TimeUnit.MINUTES)
+            .buildAsync(this::loadWorldMarketSubList);
+
+    private String loadWorldMarketSubList(WorldMarketSubListKey key){
+        try {
+            return marketAPI.getWorldMarketSubList(key).get();
+        } catch (InterruptedException | ExecutionException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }

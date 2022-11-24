@@ -1,7 +1,11 @@
 package me.kleidukos.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpHeaders;
+import me.kleidukos.models.GetWorldMarketSubList;
 import me.kleidukos.models.MarketListKey;
+import me.kleidukos.models.WorldMarketSubListKey;
 
 import java.io.IOException;
 import java.net.URI;
@@ -30,13 +34,55 @@ public class MarketAPI {
                 .header("cookie", "lang=" + (lang != null ? lang.getLang() : Lang.ENGLISH.getLang()))
                 .build();
 
-        System.out.println(lang != null ? lang.getLang() : Lang.ENGLISH.getLang());
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body);
+    }
+    public CompletableFuture<String> getWorldMarketWaitList(Region region, Lang lang) throws URISyntaxException {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(region.getRegion() + "GetWorldMarketWaitList"))
+                .method("POST", HttpRequest.BodyPublishers.noBody())
+                .header("User-agent", USERAGENT)
+                .header("content-length", "0")
+                .header("cookie", "lang=" + (lang != null ? lang.getLang() : Lang.ENGLISH.getLang()))
+                .build();
 
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body);
     }
 
-    public CompletableFuture<String> getMarketList(MarketListKey key) {
-        return null;
+    public CompletableFuture<String> getWorldMarketList(MarketListKey key) throws URISyntaxException {
+        HttpClient client = HttpClient.newHttpClient();
+        String body = "mainCategory=" + key.mainCategory() + "&subCategory=" + key.subCategory() + "&__RequestVerificationToken=hJsQARTIMDT7h0ZlXqDLQgSeD3j4Tb92wkDx9dDI8rkvBCtx_gBTErHpENECdrVo8BDEA_uwHUiZ74ZaRBGnWVHVYEsQsU3H4TUMF1ioDFM1";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(key.key().region().getRegion() + "GetWorldMarketList"))
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .header("User-agent", USERAGENT)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Cookie", "__RequestVerificationToken=JY00JZ1xlYU9FIj1ZVZtWHCDNJddWbCEh_ZqLUwjgts6IZ3395-yR2jHtg4iHNe0cwHfiwEr_7mc-ZI1tETz9xt_5qDPmGi_eMZadW3f6Cg1; lang=" + (key.key().lang() != null ? key.key().lang().getLang() : Lang.ENGLISH.getLang()) + ";")
+                .build();
+
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body);
+    }
+
+    public CompletableFuture<String> getWorldMarketSubList(WorldMarketSubListKey key) throws URISyntaxException {
+        HttpClient client = HttpClient.newHttpClient();
+        String body = "mainKey=" + key.mainKey() + "&usingCleint=0&__RequestVerificationToken=hJsQARTIMDT7h0ZlXqDLQgSeD3j4Tb92wkDx9dDI8rkvBCtx_gBTErHpENECdrVo8BDEA_uwHUiZ74ZaRBGnWVHVYEsQsU3H4TUMF1ioDFM1";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(key.key().region().getRegion() + "GetWorldMarketSubList"))
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .header("User-agent", USERAGENT)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .header("Cookie", "__RequestVerificationToken=JY00JZ1xlYU9FIj1ZVZtWHCDNJddWbCEh_ZqLUwjgts6IZ3395-yR2jHtg4iHNe0cwHfiwEr_7mc-ZI1tETz9xt_5qDPmGi_eMZadW3f6Cg1; lang=" + (key.key().lang() != null ? key.key().lang().getLang() : Lang.ENGLISH.getLang()) + ";")
+                .build();
+
+        var mapper = new ObjectMapper();
+
+        return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body).thenApply(result -> {
+            try {
+                return mapper.writeValueAsString(mapper.readValue(result, GetWorldMarketSubList.class).updateIcons());
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }
 

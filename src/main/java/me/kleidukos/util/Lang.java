@@ -18,11 +18,12 @@ public enum Lang {
         return lang;
     }
 
-    public static Lang getLangOrEnglish(String lang){
+    public static Lang getOrDefault(String lang){
         try {
             return Lang.valueOf(lang);
         }catch (Exception e){
             return Arrays.stream(Lang.values()).filter(l -> l.getLang().toLowerCase().equals(lang.toLowerCase())).findFirst().orElseGet(() -> Lang.ENGLISH);
         }
     }
+
 }
